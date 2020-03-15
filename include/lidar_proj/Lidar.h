@@ -10,9 +10,18 @@
 #include <pcl/conversions.h>
 #include <pcl/point_types.h>
 #include <pcl/range_image/range_image_planar.h>
+#include <pcl_ros/point_cloud.h>
 #include "Camera.h"
 
 using namespace std;
+struct Params {
+    int lidar_W, lidar_H;
+    int lidar_mode;
+    int num_cams;
+    string config_path;
+    int img_W, img_H;
+    vector<float> init_angle;
+};
 
 struct EIGEN_ALIGN16 PointOS1 {
     PCL_ADD_POINT4D;
@@ -39,7 +48,10 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(PointOS1,
                                           (uint16_t, noise, noise)(uint32_t, range, range))
 class Lidar {
 public:
-    Lidar(int H, int W, string config, int num_cams) : H_(H), W_(W) {
+    Lidar(const Params& params){
+//    Lidar(int H, int W, string config, int num_cams, cv::Size img_size) : H_(H), W_(W) {
+        H_ = params.lidar_H;
+        W_ = params.lidar_W;
         cv::Mat lidar_to_plane = cv::Mat::zeros(4, 4, CV_32FC1);
         lidar_to_plane.at<float>(0, 2) = -1;
         lidar_to_plane.at<float>(1, 0) = 1;
@@ -50,21 +62,21 @@ public:
         // Fix ouster pc indexing
         setPxOffset();
         // Read T for each virtual camera
-        for (int cam = 0; cam < num_cams; cam++) {
-            virtual_cams_.push_back(new Camera(config + to_string(cam) + ".yml"));
-            virtual_cams_.back()->T_ = plane_to_lidar * virtual_cams_.back()->T_;
+        cv::Size img_size = cv::Size(params.img_W, params.img_H);
+        for (int cam = 0; cam < params.num_cams; cam++) {
+            virtual_cams_.push_back(new Camera(params.config_path + to_string(cam) + ".yml", img_size));
+            virtual_cams_[cam]->T_ = plane_to_lidar * virtual_cams_[cam]->T_;
+            cv::invert(virtual_cams_[cam]->T_, virtual_cams_[cam]->inv_T_);
         }
     }
     ~Lidar(){
         for (int i = 0; i < virtual_cams_.size(); i++)
             delete virtual_cams_[i];
     }
-private:
-    vector<Camera *> virtual_cams_;
     int H_, W_;
     vector<int> px_offset_;
-    cv::Mat img_;
-    cv::Mat T_; // translation
+    vector<Camera *> virtual_cams_;
+private:
     void setPxOffset() {
         auto repeat = [](int n, const std::vector<int> &v) {
             std::vector<int> res{};

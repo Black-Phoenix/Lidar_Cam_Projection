@@ -15,7 +15,7 @@ class Camera {
 public:
     /// Constructor that loads
     /// \param config
-    Camera(const string& config) {
+    Camera(const string &config, cv::Size img_size = cv::Size()) : img_size_(img_size) {
         cv::FileStorage calib_fs(config, cv::FileStorage::READ);
         if (!calib_fs.isOpened()) {
             ROS_ERROR("Failed to find CAMERA calib file at %s", config.c_str());
@@ -27,18 +27,25 @@ public:
             calib_fs["K"] >> K_;
             calib_fs["D"] >> D_;
             calib_fs["T"] >> T_; // Not used in this version unless it is present in the lidar_class
+            cv::invert(T_, inv_T_);
         }
     }
 
     Camera(cv::Mat K, cv::Mat dist, cv::Size img_size) : K_(K), D_(dist), img_size_(img_size) {}
 
+    void reset_img() {
+        img_.setTo(-1);
+    }
 
     // intrinsics
     cv::Mat K_;
     cv::Mat D_; // distortion coeff
     cv::Size img_size_;
     // Extrinsics (Can be lidar-cam or cam-cam)
-    cv::Mat T_; // translation
+    cv::Mat T_; // transformation
+    cv::Mat inv_T_; // translation
+    cv::Mat img_; // Image of input size, is used to store the depth image
+    float init_angle_; // initial guess for angle
 };
 
 #endif //LIDAR_PROJ_CAMERA_H
