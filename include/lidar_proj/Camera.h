@@ -29,12 +29,13 @@ public:
             calib_fs["T"] >> T_; // Not used in this version unless it is present in the lidar_class
             cv::invert(T_, inv_T_);
         }
+        img_ = img_.zeros(img_size_, CV_32FC3);
     }
 
     Camera(cv::Mat K, cv::Mat dist, cv::Size img_size) : K_(K), D_(dist), img_size_(img_size) {}
 
     void reset_img() {
-        img_.setTo(-1);
+        img_.setTo(0);
     }
 
     // intrinsics

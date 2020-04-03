@@ -12,10 +12,6 @@
 #include <vector>
 #include "Lidar.h"
 #include "Camera.h"
-#include <cv_bridge/cv_bridge.h>
-#include <opencv2/core.hpp>
-#include <opencv2/opencv.hpp>
-#include <opencv2/calib3d/calib3d.hpp>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <image_transport/subscriber.h>
@@ -45,9 +41,6 @@ namespace lidar_proj {
                                 const sensor_msgs::Image::ConstPtr &);
 
         ~LidarCam();
-
-        void project_points(pcl::PointCloud<pcl::PointXYZRGB> &rgb_cloud,
-                            const vector<cv_bridge::CvImageConstPtr> &rgb_imgs);
 
     private:
         Params params_;
